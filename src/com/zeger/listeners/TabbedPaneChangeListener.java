@@ -11,14 +11,12 @@ import javax.swing.event.ChangeListener;
  * @since 16/02/2021
  */
 public class TabbedPaneChangeListener implements ChangeListener {
-
-    private View view;
+    private final View view;
 
     public TabbedPaneChangeListener(View view) {
         this.view = view;
     }
 
-    @Override
     public void stateChanged(ChangeEvent e) {
         view.selectedTabChanged();
     }

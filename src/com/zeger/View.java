@@ -2,8 +2,12 @@ package com.zeger;
 
 import com.zeger.listeners.FrameListener;
 import com.zeger.listeners.TabbedPaneChangeListener;
+import com.zeger.listeners.UndoListener;
 
 import javax.swing.*;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,10 +19,12 @@ import java.awt.event.ActionListener;
  */
 public class View extends JFrame implements ActionListener {
     private Controller controller;
+    private final UndoManager undoManager = new UndoManager();
+    private final UndoListener undoListener = new UndoListener(undoManager);
 
-    private JTabbedPane tabbedPane = new JTabbedPane();
-    private JTextPane htmlTextPane = new JTextPane();
-    private JEditorPane plainTextPane = new JEditorPane();
+    private final JTabbedPane tabbedPane = new JTabbedPane();
+    private final JTextPane htmlTextPane = new JTextPane();
+    private final JEditorPane plainTextPane = new JEditorPane();
 
     public View() {
         try {
@@ -36,8 +42,31 @@ public class View extends JFrame implements ActionListener {
         return controller;
     }
 
+    public UndoListener getUndoListener() {
+        return undoListener;
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
+        switch (e.getActionCommand()) {
+            case "New":
+                controller.createNewDocument();
+                break;
+            case "Open":
+                controller.openDocument();
+                break;
+            case "Save":
+                controller.saveDocument();
+                break;
+            case "Save as...":
+                controller.saveDocumentAs();
+                break;
+            case "Exit":
+                controller.exit();
+                break;
+            case "About":
+                showAbout();
+        }
 
     }
 
@@ -71,7 +100,7 @@ public class View extends JFrame implements ActionListener {
         tabbedPane.addTab("HTML", htmlScrollPane);
 
         JScrollPane plainScrollPane = new JScrollPane(plainTextPane);
-        tabbedPane.addTab("Текст", plainScrollPane);
+        tabbedPane.addTab("Text", plainScrollPane);
 
         tabbedPane.setPreferredSize(new Dimension(300, 300));
 
@@ -80,6 +109,23 @@ public class View extends JFrame implements ActionListener {
         getContentPane().add(tabbedPane, BorderLayout.CENTER);
     }
 
+    public void undo() {
+        try {
+            undoManager.undo();
+        } catch (CannotUndoException e) {
+            ExceptionHandler.log(e);
+        }
+    }
+
+    public void redo() {
+        try {
+            undoManager.redo();
+        } catch (CannotRedoException e) {
+            ExceptionHandler.log(e);
+        }
+    }
+
+
     public void initGui() {
         initMenuBar();
         initEditor();
@@ -87,6 +133,44 @@ public class View extends JFrame implements ActionListener {
     }
 
     public void selectedTabChanged() {
-
+        switch (tabbedPane.getSelectedIndex()) {
+            case 0:
+                controller.setPlainText(plainTextPane.getText());
+                break;
+            case 1:
+                plainTextPane.setText(controller.getPlainText());
+                break;
+        }
+        resetUndo();
     }
+
+    public boolean canUndo() {
+        return undoManager.canUndo();
+    }
+
+    public boolean canRedo() {
+        return undoManager.canRedo();
+    }
+
+    public void resetUndo() {
+        undoManager.discardAllEdits();
+    }
+
+    public boolean isHtmlTabSelected() {
+        return tabbedPane.getSelectedIndex() == 0;
+    }
+
+    public void selectHtmlTab() {
+        tabbedPane.setSelectedIndex(0);
+        resetUndo();
+    }
+
+    public void update() {
+        htmlTextPane.setDocument(controller.getDocument());
+    }
+
+    public void showAbout() {
+        JOptionPane.showMessageDialog(this, "HTML editor", "About", JOptionPane.INFORMATION_MESSAGE);
+    }
+
 }

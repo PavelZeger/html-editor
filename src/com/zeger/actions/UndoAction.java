@@ -11,7 +11,7 @@ import java.awt.event.ActionEvent;
  * @since 19/02/2021
  */
 public class UndoAction extends AbstractAction {
-    private View view;
+    private final View view;
 
     public UndoAction(View view) {
         this.view = view;
@@ -19,6 +19,7 @@ public class UndoAction extends AbstractAction {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        view.undo();
     }
 }
+
